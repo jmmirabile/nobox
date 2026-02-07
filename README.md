@@ -2,7 +2,7 @@
 
 **JSON and YAML key-value storage utilities with CRUD operations via CLI**
 
-Part of the [Box Suite](https://github.com/jmmirabile/confbox) - a modular Python CLI application framework.
+Part of the [Box Suite](https://github.com/jmmirabile/confbox) - a modular Python CLI utility framework.
 
 > **Status:** 🔨 In development - design complete, implementation in progress
 

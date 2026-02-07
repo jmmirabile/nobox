@@ -3,7 +3,7 @@
 ## Project Overview
 NoBox - JSON and YAML key-value storage utilities for flexible, schema-less data storage via CLI.
 
-Part of the [Box Suite](https://github.com/jmmirabile/confbox) - a modular Python CLI application framework.
+Part of the [Box Suite](https://github.com/jmmirabile/confbox) - a modular Python CLI utility framework.
 
 ## Project Structure
 ```

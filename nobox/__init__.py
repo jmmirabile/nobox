@@ -1,7 +1,7 @@
 """
 NoBox - JSON and YAML key-value storage utilities
 
-Part of the Box Suite - a modular Python CLI application framework.
+Part of the Box Suite - a modular Python CLI utility framework.
 
 NoBox provides simple command-line interfaces for managing flexible,
 schema-less data storage in JSON and YAML formats.

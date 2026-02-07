@@ -9,7 +9,7 @@ Provides commands for CRUD operations on collections:
 - keys: List all record keys
 - all: Show all records
 
-Part of the Box Suite.
+Part of the Box Suite - a modular Python CLI utility framework.
 """
 
 import argparse
