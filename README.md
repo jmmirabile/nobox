@@ -4,8 +4,6 @@
 
 Part of the [Box Suite](https://github.com/jmmirabile/confbox) - a modular Python CLI utility framework.
 
-> **Status:** 🔨 In development - design complete, implementation in progress
-
 ## Features
 
 - **Schema-less storage** - flexible key-value collections
