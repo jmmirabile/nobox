@@ -73,6 +73,35 @@ Examples:
   # Delete a record
   {{cmd}} mydb users del alice
 
+  # Delete a collection (table)
+  {{cmd}} mydb users --delete
+
+  # Delete entire database
+  {{cmd}} mydb --delete
+
+  # Import from stdin
+  cat data.txt | {{cmd}} mydb users --import
+  cat data.txt | {{cmd}} mydb users -i
+
+  Import format (one record per line):
+    Standard:  key field:value field:value ...
+               ↑   ↑           ↑
+               |   |           Space-separated (NOT comma-separated)
+               |   field:value pairs
+               Record key (required, first item on line)
+
+    Example file (data.txt):
+      alice name:Alice email:alice@example.com age:30
+      bob name:Bob department:engineering salary:75000
+      charlie name:Charlie role:manager team:sales
+
+    Notes:
+      • One record per line
+      • Key is the first word (required)
+      • Fields are space-separated (use quotes for spaces in values)
+      • Numbers auto-convert (age:30 becomes integer 30)
+      • Empty lines and # comments are skipped
+
 Storage location (via ConfBox):
   Linux: ~/.local/share/nobox/{self.driver.format_subdir}/
   macOS: ~/Library/Application Support/nobox/{self.driver.format_subdir}/
@@ -101,11 +130,27 @@ Storage location (via ConfBox):
             help="List databases (no args) or collections (with database)"
         )
 
+        # Import flag
+        parser.add_argument(
+            "-i", "--import",
+            dest="import_flag",
+            action="store_true",
+            help="Import records from stdin (requires database and collection)"
+        )
+
+        # Delete flag
+        parser.add_argument(
+            "-d", "--delete",
+            dest="delete_flag",
+            action="store_true",
+            help="Delete database (with database only) or collection (with database and collection)"
+        )
+
         # Output format options
         parser.add_argument(
             "--json",
             action="store_true",
-            help="Output as JSON"
+            help="Output as JSON (or import from JSON)"
         )
         parser.add_argument(
             "--jsonl",
@@ -317,6 +362,128 @@ Storage location (via ConfBox):
                 else:
                     print(f"No collections found in database '{parsed_args.database}'")
                 return 0
+
+            # Handle --import flag
+            if parsed_args.import_flag:
+                if not parsed_args.database or not parsed_args.collection:
+                    print("Error: import requires database and collection", file=sys.stderr)
+                    print("Usage: jb <database> <collection> --import", file=sys.stderr)
+                    print("   or: cat data.txt | jb <database> <collection> import", file=sys.stderr)
+                    return 1
+
+                # Create store instance
+                store = DictStore(parsed_args.database, self.driver)
+
+                # Import records from stdin
+                imported = 0
+                errors = 0
+                error_lines = []
+
+                try:
+                    # Case 1: Import from JSON object
+                    if parsed_args.json:
+                        try:
+                            content = sys.stdin.read()
+                            if content.strip():
+                                data_map = json.loads(content)
+                                for key, record in data_map.items():
+                                    store.set(parsed_args.collection, key, record)
+                                    imported += 1
+                        except Exception as e:
+                            errors += 1
+                            error_lines.append((0, f"JSON Parse Error: {e}"))
+
+                    # Case 2: Import from space-separated format or JSON Lines
+                    else:
+                        for line_num, line in enumerate(sys.stdin, 1):
+                            line = line.strip()
+                            if not line or line.startswith('#'):
+                                continue
+
+                            try:
+                                # Check if it's JSON Lines
+                                if line.startswith('{') and line.endswith('}'):
+                                    record = json.loads(line)
+                                    key = record.pop("_key", None)
+                                    if key:
+                                        store.set(parsed_args.collection, str(key), record)
+                                        imported += 1
+                                        continue
+                                    else:
+                                        raise ValueError("JSON Line missing '_key' field")
+
+                                # Standard format: key field:value ...
+                                parts = line.split()
+                                if len(parts) < 2:
+                                    errors += 1
+                                    error_lines.append((line_num, f"Invalid format: {line}"))
+                                    continue
+
+                                key = parts[0]
+                                data = self.parse_key_values(parts[1:])
+                                store.set(parsed_args.collection, key, data)
+                                imported += 1
+
+                            except ValueError as e:
+                                errors += 1
+                                error_lines.append((line_num, str(e)))
+                            except Exception as e:
+                                errors += 1
+                                error_lines.append((line_num, f"Unexpected error: {e}"))
+
+                    # Report results
+                    print(f"✓ Imported {imported} record(s) into {parsed_args.collection}")
+
+                    if errors > 0:
+                        print(f"⚠ {errors} line(s) skipped due to errors:", file=sys.stderr)
+                        for line_num, error in error_lines[:5]:
+                            print(f"  Line {line_num}: {error}", file=sys.stderr)
+                        if len(error_lines) > 5:
+                            print(f"  ... and {len(error_lines) - 5} more", file=sys.stderr)
+
+                    return 0 if imported > 0 else 1
+
+                except KeyboardInterrupt:
+                    print(f"\n⚠ Import interrupted. Imported {imported} record(s) before interruption.")
+                    return 1
+
+            # Handle --delete flag
+            if parsed_args.delete_flag:
+                import shutil
+
+                # Delete collection
+                if parsed_args.database and parsed_args.collection:
+                    store = DictStore(parsed_args.database, self.driver)
+                    collection_path = store._get_collection_path(parsed_args.collection)
+
+                    if not collection_path.exists():
+                        print(f"Error: Collection '{parsed_args.collection}' not found in database '{parsed_args.database}'", file=sys.stderr)
+                        return 1
+
+                    collection_path.unlink()
+                    print(f"✓ Deleted collection '{parsed_args.collection}' from database '{parsed_args.database}'")
+                    return 0
+
+                # Delete database
+                elif parsed_args.database:
+                    store = DictStore(parsed_args.database, self.driver)
+
+                    if not store.db_dir.exists():
+                        print(f"Error: Database '{parsed_args.database}' not found", file=sys.stderr)
+                        return 1
+
+                    # Count collections before deleting
+                    collections = store.list_collections()
+
+                    shutil.rmtree(store.db_dir)
+                    print(f"✓ Deleted database '{parsed_args.database}' ({len(collections)} collection(s))")
+                    return 0
+
+                else:
+                    print("Error: --delete requires database name", file=sys.stderr)
+                    print("Usage: jb <database> --delete                     # Delete database", file=sys.stderr)
+                    print("   or: jb <database> <collection> --delete       # Delete collection", file=sys.stderr)
+                    return 1
 
             # Handle --list flag
             if parsed_args.list:

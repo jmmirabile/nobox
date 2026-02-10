@@ -26,6 +26,16 @@
 - Added `yb` as short alias for `yamlbox`
 - Aliases registered in both `setup.py` and `pyproject.toml`
 
+#### Import from stdin 🎉
+- **Import command** for bulk data loading:
+  - `cat file.txt | jb mydb users import`
+  - Format: `key field:value field:value ...` (one record per line)
+  - Auto type conversion (integers, floats)
+  - Skips empty lines and comments (# prefix)
+  - Error handling with detailed reporting
+  - Best-effort import (continues on errors)
+  - Works with both JSON and YAML formats
+
 #### Core Features (Previously Implemented)
 - Driver architecture (JSONDriver, YAMLDriver)
 - DictStore with full CRUD operations
@@ -70,8 +80,9 @@
   - Made `database`, `collection`, and `command` arguments optional
   - Added `-l`/`--list` flag for hierarchical listing
   - Added `databases` and `collections` to command choices
+  - Added `import` command with stdin reading and error handling
   - Implemented smart command routing for discovery vs CRUD
-  - Updated help text with discovery examples
+  - Updated help text with discovery and import examples
 
 - **setup.py** & **pyproject.toml**:
   - Added `jb` and `yb` console script entry points
@@ -83,7 +94,6 @@
 ### TODO Before Release
 
 #### High Priority
-- [ ] Implement `import` command for stdin input
 - [ ] Add pytest test suite
 - [ ] Add input validation (database/collection names)
 - [ ] Prevent path traversal vulnerabilities

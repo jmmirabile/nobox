@@ -195,16 +195,80 @@ jb contacts people all --csv > data.csv   # CSV for Excel
 
 ### Import (from stdin)
 ```bash
-cat data.txt | jb <database> <collection> import
+cat data.txt | jb <database> <collection> --import
+cat data.txt | jb <database> <collection> -i
 ```
+
+Import records from stdin, one per line.
+
+---
+
+## Import Format (IMPORTANT!)
+
+Each line must follow this exact format:
+```
+key field:value field:value field:value
+↑   ↑
+|   Space-separated field:value pairs (NOT commas!)
+Record key (required, first word)
+```
+
+### Valid Example
+```
+alice name:Alice email:alice@example.com age:30
+bob name:Bob department:engineering salary:75000
+charlie name:Charlie role:manager
+```
+
+### Invalid Examples ❌
+```
+# Missing key
+name:Alice email:alice@example.com
+
+# Using commas instead of spaces
+alice name:Alice,email:alice@example.com,age:30
+
+# Missing colons
+alice Alice alice@example.com 30
+```
+
+---
+
+**Features:**
+- Auto type conversion (numbers are parsed as int/float)
+- Skips empty lines and comments (lines starting with #)
+- Reports success count and error details
+- Best-effort import (continues on errors)
 
 **Examples:**
 ```bash
-# Import parsed data
-cat servers.txt | awk '{print $1, "ip:"$2, "os:"$3}' | jb inventory servers import
+# Import from a file
+cat data.txt | jb mydb users --import
 
-# Import from script
-./extract_data.sh | jb cache results import
+# File format (one record per line):
+# alice name:Alice age:30 email:alice@example.com
+# bob name:Bob department:engineering salary:75000
+
+# Import parsed data with awk
+cat servers.txt | awk '{print $1, "ip:"$2, "os:"$3}' | jb inventory servers -i
+
+# Import from a script
+./extract_data.sh | jb cache results --import
+
+# Single line import
+echo "server1 ip:10.1.1.10 status:active" | jb infra hosts -i
+
+# Multiple records
+printf "web1 ip:10.1.1.1 role:frontend\nweb2 ip:10.1.1.2 role:frontend\n" | jb infra servers --import
+```
+
+**Error Handling:**
+```bash
+$ cat data.txt | jb mydb users import
+✓ Imported 10 record(s) into users
+⚠ 2 line(s) skipped due to errors:
+  Line 5: Invalid format 'baddata'. Use 'field:value' format.
+  Line 8: Missing field:value pairs: incomplete
 ```
 
 ## Output Formats
@@ -560,6 +624,9 @@ jb mydb users set alice name:Alice age:30    # Create/update record
 jb mydb users get alice                      # Get specific record
 jb mydb users all                            # Show all records
 jb mydb users del alice                      # Delete record
+
+# Import from stdin (one record per line)
+cat data.txt | jb mydb users import          # Bulk import
 ```
 
 ### Output Formats

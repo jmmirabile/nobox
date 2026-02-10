@@ -121,6 +121,32 @@ echo "$ yb demo notes all"
 yb demo notes all
 echo ""
 
+# Import command demo
+echo "📥 Import from stdin:"
+echo ""
+
+echo "Create a data file:"
+cat > /tmp/demo_import.txt << 'IMPORTEOF'
+# Product inventory
+widget1 name:Widget price:29.99 stock:100
+widget2 name:"Super Widget" price:49.99 stock:50
+gadget1 name:Gadget price:19.99 stock:200
+IMPORTEOF
+
+echo "$ cat /tmp/demo_import.txt | jb demo inventory import"
+cat /tmp/demo_import.txt | jb demo inventory import
+echo ""
+
+echo "View imported data:"
+echo "$ jb demo inventory all"
+jb demo inventory all
+echo ""
+
+echo "Piping from commands (parse and import):"
+echo '$ echo "laptop type:electronics price:999 available:yes" | jb demo inventory import'
+echo "laptop type:electronics price:999 available:yes" | jb demo inventory import
+echo ""
+
 # Summary
 echo "========================================"
 echo "✅ Demo Complete!"
@@ -131,6 +157,7 @@ echo "  • jb -l          → List databases"
 echo "  • jb demo -l     → List collections"
 echo "  • jb demo contacts keys → List keys"
 echo "  • Multiple output formats (table, JSON, CSV, etc.)"
+echo "  • Import from stdin (cat file | jb ... import)"
 echo "  • Works the same for YAML (yb)"
 echo ""
 echo "Try it yourself! Your demo data is in: ~/.local/share/nobox/json/demo/"
