@@ -142,6 +142,8 @@ class YAMLDriver(Driver):
 
 | Operation | Syntax | Description |
 |-----------|--------|-------------|
+| **databases** | `jb --list` or `jb -l` or `jb databases` | List all databases |
+| **collections** | `jb mydb --list` or `jb mydb -l` or `jb mydb collections` | List collections in database |
 | **keys** | `jb mydb users keys` | List all record keys |
 | **get** | `jb mydb users get <key>` | Get specific record |
 | **set** | `jb mydb users set <key> field:value ...` | Create/update record |
@@ -152,24 +154,49 @@ class YAMLDriver(Driver):
 ### Examples
 
 ```bash
-# Set a record with key:value pairs
+# Hierarchical discovery
+jb --list                        # List all databases
+jb -l                            # Short form
+jb databases                     # Explicit command
+
+jb mydb --list                   # List collections in mydb
+jb mydb -l                       # Short form
+jb mydb collections              # Explicit command
+
+# CRUD operations
 jb mydb users set alice name:Alice age:30 email:alice@example.com
-
-# Get a specific record
 jb mydb users get alice
-
-# List all keys
 jb mydb users keys
-
-# Show all records
 jb mydb users all
-
-# Delete a record
 jb mydb users del alice
 
 # Import from stdin
 cat parsed_data.txt | jb mydb users import
 ```
+
+### Hierarchical Navigation
+
+NoBox provides a natural hierarchy for exploring data:
+
+```bash
+# Level 1: Databases
+jb -l
+→ contacts, inventory, mydb
+
+# Level 2: Collections
+jb mydb -l
+→ users, products
+
+# Level 3: Keys
+jb mydb users keys
+→ alice, bob, charlie
+
+# Level 4: Records
+jb mydb users get alice
+→ {"name": "Alice", "age": 30}
+```
+
+This makes discovery intuitive without needing to remember specific names.
 
 ---
 
@@ -358,32 +385,39 @@ cat f5_vips.txt | awk '{print $1, "dest:"$2, "pool:"$3}' | jb f5 vips import
 
 ## Development Roadmap
 
-### Phase 1: Core Implementation
-- [ ] Implement Driver base class and JSON/YAML drivers
-- [ ] Implement DictStore (CRUD operations)
-- [ ] Implement CLI with basic commands (set, get, del, keys, all)
-- [ ] Default table output format
+### Phase 1: Core Implementation ✅
+- [x] Implement Driver base class and JSON/YAML drivers
+- [x] Implement DictStore (CRUD operations)
+- [x] Implement CLI with basic commands (set, get, del, keys, all)
+- [x] Default table output format
 
-### Phase 2: Output Formats
-- [ ] Implement --json output
-- [ ] Implement --jsonl output
-- [ ] Implement --oneline output
-- [ ] Implement --csv output
+### Phase 2: Output Formats ✅
+- [x] Implement --json output
+- [x] Implement --jsonl output
+- [x] Implement --oneline output
+- [x] Implement --csv output
 
-### Phase 3: stdin Support
+### Phase 3: Discovery & Navigation ✅
+- [x] Implement list databases command (jb --list, jb -l, jb databases)
+- [x] Implement list collections command (jb mydb --list, jb mydb -l, jb mydb collections)
+- [x] Add jb/yb command aliases
+- [x] Hierarchical navigation interface
+
+### Phase 4: stdin Support (TODO)
 - [ ] Implement import command
 - [ ] Parse key:value format from stdin
 - [ ] Handle bulk imports
 
-### Phase 4: Polish
-- [ ] Error handling and validation
-- [ ] Help text and documentation
-- [ ] Unit tests
+### Phase 5: Testing (TODO)
+- [ ] Unit tests for drivers
+- [ ] Unit tests for DictStore
+- [ ] Unit tests for CLI
 - [ ] Integration tests
 
-### Phase 5: Release
-- [ ] Complete README with examples
-- [ ] setup.py and pyproject.toml
+### Phase 6: Release (In Progress)
+- [x] Complete README with examples
+- [x] setup.py and pyproject.toml
+- [x] DESIGN.md documentation
 - [ ] Version 0.1.0
 - [ ] Publish to PyPI
 
@@ -402,6 +436,26 @@ cat f5_vips.txt | awk '{print $1, "dest:"$2, "pool:"$3}' | jb f5 vips import
 ---
 
 ## Design Decisions Log
+
+### 2026-02-09: Hierarchical Discovery Interface
+- **Decision:** Add `--list` / `-l` flag and explicit `databases` / `collections` commands
+- **Rationale:**
+  - Users need to discover what databases and collections exist
+  - Hierarchical interface matches natural exploration pattern
+  - Multiple syntax options (flag vs explicit) for user preference
+- **Implementation:**
+  - `jb -l` → list databases
+  - `jb mydb -l` → list collections
+  - `DictStore.list_databases()` class method
+  - `DictStore.list_collections()` instance method (already existed)
+
+### 2026-02-09: Command Aliases (jb/yb)
+- **Decision:** Add `jb` and `yb` as command aliases in entry_points
+- **Rationale:**
+  - Shorter commands improve UX for frequent use
+  - Documentation already promoted these aliases
+  - Common pattern in Unix tools (e.g., `ll` for `ls -l`)
+- **Implementation:** Added to both setup.py and pyproject.toml entry_points
 
 ### 2026-02-06: Single Package, Two Entry Points
 - **Decision:** One package (nobox) with two commands (jsonbox/yamlbox)

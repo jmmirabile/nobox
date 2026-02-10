@@ -31,7 +31,9 @@ setup(
     entry_points={
         "console_scripts": [
             "jsonbox=nobox.main:main_json",
+            "jb=nobox.main:main_json",
             "yamlbox=nobox.main:main_yaml",
+            "yb=nobox.main:main_yaml",
         ],
     },
     license="MIT",

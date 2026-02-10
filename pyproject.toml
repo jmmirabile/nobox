@@ -48,7 +48,9 @@ Documentation = "https://github.com/jmmirabile/nobox#readme"
 
 [project.scripts]
 jsonbox = "nobox.main:main_json"
+jb = "nobox.main:main_json"
 yamlbox = "nobox.main:main_yaml"
+yb = "nobox.main:main_yaml"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

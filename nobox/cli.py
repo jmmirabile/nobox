@@ -50,6 +50,14 @@ class CLI:
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=f"""
 Examples:
+  # List all databases
+  {{cmd}} --list
+  {{cmd}} databases
+
+  # List collections in a database
+  {{cmd}} mydb --list
+  {{cmd}} mydb collections
+
   # Set a record with key:value pairs
   {{cmd}} mydb users set alice name:Alice age:30 email:alice@example.com
 
@@ -72,17 +80,25 @@ Storage location (via ConfBox):
 """.format(cmd="jb" if self.format_name == "JSON" else "yb")
         )
 
-        parser.add_argument("database", help="Database name")
-        parser.add_argument("collection", help="Collection name")
+        parser.add_argument("database", nargs="?", help="Database name")
+        parser.add_argument("collection", nargs="?", help="Collection name")
         parser.add_argument(
             "command",
-            choices=["set", "get", "del", "keys", "all"],
+            nargs="?",
+            choices=["set", "get", "del", "keys", "all", "databases", "collections"],
             help="Command to execute"
         )
         parser.add_argument(
             "args",
             nargs="*",
             help="Command arguments (key for get/del, key field:value... for set)"
+        )
+
+        # List flag
+        parser.add_argument(
+            "-l", "--list",
+            action="store_true",
+            help="List databases (no args) or collections (with database)"
         )
 
         # Output format options
@@ -272,6 +288,99 @@ Storage location (via ConfBox):
         parsed_args = parser.parse_args(args)
 
         try:
+            # Handle special case: "databases" as first argument
+            if parsed_args.database == "databases":
+                databases = DictStore.list_databases(self.driver)
+                if databases:
+                    print(f"Databases ({self.format_name}):")
+                    for db in databases:
+                        print(f"  {db}")
+                    print(f"\n{len(databases)} database(s)")
+                else:
+                    print(f"No databases found in {self.format_name} format")
+                return 0
+
+            # Handle special case: "collections" as second argument
+            if parsed_args.collection == "collections":
+                if not parsed_args.database:
+                    print("Error: 'collections' command requires a database name", file=sys.stderr)
+                    print("Usage: jb <database> collections", file=sys.stderr)
+                    return 1
+
+                store = DictStore(parsed_args.database, self.driver)
+                collections = store.list_collections()
+                if collections:
+                    print(f"Collections in '{parsed_args.database}':")
+                    for coll in collections:
+                        print(f"  {coll}")
+                    print(f"\n{len(collections)} collection(s)")
+                else:
+                    print(f"No collections found in database '{parsed_args.database}'")
+                return 0
+
+            # Handle --list flag
+            if parsed_args.list:
+                # List databases (no database specified)
+                if not parsed_args.database:
+                    databases = DictStore.list_databases(self.driver)
+                    if databases:
+                        print(f"Databases ({self.format_name}):")
+                        for db in databases:
+                            print(f"  {db}")
+                        print(f"\n{len(databases)} database(s)")
+                    else:
+                        print(f"No databases found in {self.format_name} format")
+                    return 0
+
+                # List collections in database
+                else:
+                    store = DictStore(parsed_args.database, self.driver)
+                    collections = store.list_collections()
+                    if collections:
+                        print(f"Collections in '{parsed_args.database}':")
+                        for coll in collections:
+                            print(f"  {coll}")
+                        print(f"\n{len(collections)} collection(s)")
+                    else:
+                        print(f"No collections found in database '{parsed_args.database}'")
+                    return 0
+
+            # Handle explicit 'collections' command (third position)
+            if parsed_args.command == "collections":
+                if not parsed_args.database:
+                    print("Error: 'collections' command requires a database name", file=sys.stderr)
+                    print("Usage: jb <database> collections", file=sys.stderr)
+                    return 1
+
+                store = DictStore(parsed_args.database, self.driver)
+                collections = store.list_collections()
+                if collections:
+                    print(f"Collections in '{parsed_args.database}':")
+                    for coll in collections:
+                        print(f"  {coll}")
+                    print(f"\n{len(collections)} collection(s)")
+                else:
+                    print(f"No collections found in database '{parsed_args.database}'")
+                return 0
+
+            # Handle explicit 'databases' command (third position)
+            if parsed_args.command == "databases":
+                databases = DictStore.list_databases(self.driver)
+                if databases:
+                    print(f"Databases ({self.format_name}):")
+                    for db in databases:
+                        print(f"  {db}")
+                    print(f"\n{len(databases)} database(s)")
+                else:
+                    print(f"No databases found in {self.format_name} format")
+                return 0
+
+            # Validate required arguments for CRUD commands
+            if not parsed_args.database or not parsed_args.collection or not parsed_args.command:
+                print("Error: database, collection, and command are required for CRUD operations", file=sys.stderr)
+                parser.print_help()
+                return 1
+
             # Create store instance
             store = DictStore(parsed_args.database, self.driver)
 

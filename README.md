@@ -60,6 +60,10 @@ NoBox uses ConfBox to store databases in OS-specific data directories:
 ## Quick Start
 
 ```bash
+# Discover what's stored
+jb --list                        # List all databases
+jb mydb --list                   # List collections in a database
+
 # Create/update a record (JSON format)
 jb mydb users set alice name:Alice age:30 email:alice@example.com
 
@@ -76,10 +80,61 @@ jb mydb users all
 jb mydb users del alice
 
 # Use YAML format instead
+yb --list                        # List YAML databases
 yb mydb users set bob name:Bob role:admin
 ```
 
 ## Commands
+
+### List Databases
+
+```bash
+jb --list              # or jb -l
+jb databases           # explicit command
+```
+
+**Examples:**
+```bash
+# List all JSON databases
+jb --list
+
+# Output:
+# Databases (JSON):
+#   contacts
+#   inventory
+#   mydb
+#
+# 3 database(s)
+
+# List all YAML databases
+yb -l
+```
+
+### List Collections
+
+```bash
+jb <database> --list       # or jb <database> -l
+jb <database> collections  # explicit command
+```
+
+**Examples:**
+```bash
+# List collections in a database
+jb mydb --list
+
+# Output:
+# Collections in 'mydb':
+#   products
+#   users
+#
+# 2 collection(s)
+
+# Short form
+jb inventory -l
+
+# Explicit command
+jb contacts collections
+```
 
 ### Set (Create/Update)
 ```bash
@@ -204,12 +259,121 @@ jb mydb users all --csv > users.csv
 # bob,Bob,25,bob@example.com
 ```
 
+## Hierarchical Navigation
+
+NoBox provides intuitive hierarchical discovery:
+
+```bash
+# Level 1: What databases exist?
+jb -l
+→ contacts, inventory, mydb
+
+# Level 2: What collections in this database?
+jb mydb -l
+→ users, products
+
+# Level 3: What keys in this collection?
+jb mydb users keys
+→ alice, bob, charlie
+
+# Level 4: What data in this record?
+jb mydb users get alice
+→ name:Alice, age:30, email:alice@example.com
+```
+
+This hierarchical interface makes it easy to explore your data without remembering specific names.
+
+## Complete Workflow Example
+
+Here's a complete example showing discovery, creation, and querying:
+
+```bash
+# Start fresh - check what databases exist
+$ jb -l
+No databases found in JSON format
+
+# Create some data
+$ jb contacts people set alice name:Alice email:alice@example.com phone:555-1234
+✓ Set record 'alice' in people
+
+$ jb contacts people set bob name:Bob email:bob@example.com department:engineering
+✓ Set record 'bob' in people
+
+$ jb contacts companies set acme name:"Acme Corp" industry:manufacturing employees:500
+✓ Set record 'acme' in companies
+
+# Discover what we created
+$ jb -l
+Databases (JSON):
+  contacts
+
+1 database(s)
+
+$ jb contacts -l
+Collections in 'contacts':
+  companies
+  people
+
+2 collection(s)
+
+$ jb contacts people keys
+alice
+bob
+
+# Query the data
+$ jb contacts people all
+key   | department  | email               | name  | phone
+-----------------------------------------------------------------
+alice |             | alice@example.com   | Alice | 555-1234
+bob   | engineering | bob@example.com     | Bob   |
+
+2 record(s)
+
+# Export as JSON for further processing
+$ jb contacts people all --json
+{
+  "alice": {
+    "email": "alice@example.com",
+    "name": "Alice",
+    "phone": "555-1234"
+  },
+  "bob": {
+    "department": "engineering",
+    "email": "bob@example.com",
+    "name": "Bob"
+  }
+}
+
+# Export as CSV for Excel
+$ jb contacts people all --csv > contacts.csv
+$ cat contacts.csv
+key,department,email,name,phone
+alice,,alice@example.com,Alice,555-1234
+bob,engineering,bob@example.com,Bob,
+
+# Use with jq for complex queries
+$ jb contacts people all --json | jq '.[] | select(.department=="engineering")'
+{
+  "department": "engineering",
+  "email": "bob@example.com",
+  "name": "Bob"
+}
+
+# One-line format for grep/awk
+$ jb contacts people all --oneline | grep alice
+alice email:alice@example.com name:Alice phone:555-1234
+```
+
 ## Use Cases
 
 ### Network Device Configurations
 ```bash
 # Extract F5 LTM configs
 ./extract_f5_vips.sh | jb f5 vips import
+
+# Discover what's stored
+jb -l                            # See all device databases
+jb f5 -l                         # See all F5 collections (vips, pools, etc.)
 
 # Query later
 jb f5 vips get prod-web-vip --json | jq '.pool.members'
@@ -232,6 +396,10 @@ jb cache api get users --json | jq '.[] | select(.active==true)'
 # Parse and store
 ssh server "show inventory" | awk '{print $1, "ip:"$2, "os:"$3}' | jb inventory servers import
 
+# Discover inventory structure
+jb inventory -l                   # See all collections (servers, switches, etc.)
+jb inventory servers keys         # List all server names
+
 # Query
 jb inventory servers keys | grep prod
 jb inventory servers all --csv > inventory.csv
@@ -242,6 +410,11 @@ jb inventory servers all --csv > inventory.csv
 # Flexible fields - no schema needed
 jb notes tasks set fix-dns priority:high assigned:alice notes:"Check resolver config"
 jb notes tasks set deploy priority:low deadline:2026-02-15
+
+# Explore your notes
+jb -l                             # See all note databases
+jb notes -l                       # See all note collections (tasks, ideas, etc.)
+jb notes tasks keys               # List all task names
 
 # Query
 jb notes tasks all --oneline | grep "priority:high"
@@ -365,6 +538,45 @@ MIT License - see LICENSE file for details.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Quick Reference Card
+
+### Discovery Commands
+```bash
+jb -l                          # List all JSON databases
+jb --list                      # Same as above (long form)
+jb databases                   # Same as above (explicit)
+
+jb mydb -l                     # List collections in mydb
+jb mydb --list                 # Same as above (long form)
+jb mydb collections            # Same as above (explicit)
+
+jb mydb users keys             # List keys in users collection
+```
+
+### CRUD Commands
+```bash
+jb mydb users set alice name:Alice age:30    # Create/update record
+jb mydb users get alice                      # Get specific record
+jb mydb users all                            # Show all records
+jb mydb users del alice                      # Delete record
+```
+
+### Output Formats
+```bash
+jb mydb users all              # Pretty table (default)
+jb mydb users all --json       # JSON object
+jb mydb users all --jsonl      # JSON Lines (one per line)
+jb mydb users all --oneline    # key field:value format
+jb mydb users all --csv        # CSV for Excel
+```
+
+### YAML Format
+```bash
+yb -l                          # List YAML databases
+yb mydb -l                     # List collections
+yb mydb users set bob name:Bob # Same commands as jb
+```
 
 ## Links
 

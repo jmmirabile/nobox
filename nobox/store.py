@@ -268,3 +268,33 @@ class DictStore:
             return True
 
         return False
+
+    @classmethod
+    def list_databases(cls, driver: Driver) -> List[str]:
+        """List all databases for this format
+
+        Args:
+            driver: Storage format driver
+
+        Returns:
+            List of database names (sorted)
+
+        Example:
+            databases = DictStore.list_databases(JSONDriver())
+            # Returns: ["contacts", "inventory", "mydb"]
+        """
+        from confbox import get_app_data_dir
+
+        # Get base nobox directory via ConfBox
+        base_dir = get_app_data_dir(driver.app_name)
+        format_dir = base_dir / driver.format_subdir
+
+        if not format_dir.exists():
+            return []
+
+        databases = []
+        for path in format_dir.iterdir():
+            if path.is_dir():
+                databases.append(path.name)
+
+        return sorted(databases)
