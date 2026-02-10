@@ -1,6 +1,69 @@
 # NoBox Changelog
 
-## [0.1.0] - 2026-02-09 (Pre-release)
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.2.0] - 2026-02-10
+
+### ⚠️ BREAKING CHANGES
+
+#### Case-Sensitive Keys
+**Keys are now case-sensitive to comply with JSON/YAML specifications.**
+
+- **v0.1.0 behavior**: Keys were case-insensitive ("Jeff", "jeff", "JEFF" all mapped to "jeff")
+- **v0.2.0 behavior**: Keys are case-sensitive ("Jeff", "jeff", "JEFF" are three different keys)
+
+**Why this change:**
+1. **JSON/YAML spec compliance**: Both specifications define keys as case-sensitive
+2. **Data portability**: Prevents data corruption when round-tripping data
+3. **Example problem**:
+   ```
+   Original system: {"User": {...}, "user": {...}}  # Two keys
+   Import to v0.1.0: {"user": {...}}                # MERGED - data lost!
+   Export back:      {"user": {...}}                # "User" gone forever!
+   ```
+
+**Migration guide:**
+- Review your existing data for keys that differ only in case
+- Update your scripts/workflows to use exact case when accessing records
+- Keys like "Alice" must now be accessed as "Alice", not "alice"
+
+### Fixed
+
+#### Set Operation Now Merges Data
+**The `set` command now properly merges fields instead of replacing entire records.**
+
+- **Bug (v0.1.0)**: Setting a single field would remove all other fields
+  - Example: If record had `{name: "Nick", email: "nick@example.com"}`, running `set nick age:25` resulted in `{age: 25}` (other fields removed!)
+
+- **Fix (v0.2.0)**: Setting a field now merges with existing data
+  - Example: Same record, running `set nick age:25` results in `{name: "Nick", email: "nick@example.com", age: 25}` (all fields preserved!)
+
+**Technical details:**
+- Modified `DictStore.set()` to use `dict.update()` for existing records
+- Only replaces entire record if it doesn't exist or isn't a dict
+
+### Added
+
+#### Delete Operations
+- **Delete database**: `jb <database> -d` or `jb <database> --delete`
+- **Delete collection**: `jb <database> <collection> -d` or `jb <database> <collection> --delete`
+- Confirmation prompts for safety
+- Works for both JSON and YAML formats
+
+### Changed
+
+#### Documentation
+- Updated all documentation to reflect case-sensitive keys
+- Added breaking change summary document
+- Updated docstrings throughout codebase to note case-sensitivity
+- Clarified set operation merge behavior in README and docstrings
+
+---
+
+## [0.1.0] - 2026-02-09
 
 ### Added
 
@@ -45,7 +108,7 @@
   - JSON Lines (`--jsonl`)
   - One-line format (`--oneline`)
   - CSV (`--csv`)
-- Case-insensitive key storage
+- ~~Case-insensitive key storage~~ (removed in v0.2.0)
 - Cross-platform storage via ConfBox
 
 ### Changed
@@ -112,12 +175,9 @@
 
 ## Version History
 
-### [0.1.0] - 2026-02-09 (Pre-release)
-Initial pre-release with core features and hierarchical discovery.
+### [0.1.0] - 2026-02-09
+Initial release with core features and hierarchical discovery.
 
-**Note**: This version is feature-complete for core functionality but lacks:
-- stdin import command (documented but not implemented)
-- Test suite
-- Input validation
-
-Once these are added, this will be promoted to official 0.1.0 release.
+**Known Issues (Fixed in v0.2.0)**:
+- Keys were case-insensitive (breaking: now case-sensitive)
+- Set operation replaced entire record instead of merging fields

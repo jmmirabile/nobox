@@ -7,7 +7,7 @@ NoBox provides simple command-line interfaces for managing flexible,
 schema-less data storage in JSON and YAML formats.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Jeff Mirabile"
 __license__ = "MIT"
 

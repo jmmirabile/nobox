@@ -79,37 +79,35 @@ class DictStore:
         path = self._get_collection_path(collection)
         self.driver.save_collection(path, data)
 
-    def _normalize_key(self, key: str) -> str:
-        """Normalize key to lowercase for case-insensitive storage
-
-        Args:
-            key: Original key
-
-        Returns:
-            Lowercase key
-
-        Note:
-            All keys are stored in lowercase to provide case-insensitive
-            access. This prevents confusion with keys like "Alice" vs "alice".
-            Original casing can still be preserved in the record data itself.
-        """
-        return key.lower()
+    # Removed: _normalize_key() - NoBox is case-sensitive to follow JSON/YAML specs
+    # Keys are stored exactly as provided to ensure data portability and spec compliance
 
     def set(self, collection: str, key: str, data: Dict[str, Any]) -> None:
         """Create or update a record
 
+        If the record exists, new fields are merged with existing data.
+        Existing fields are updated with new values.
+
         Args:
             collection: Collection name
-            key: Record key (case-insensitive, stored as lowercase)
-            data: Record data (dictionary)
+            key: Record key (case-sensitive)
+            data: Record data (dictionary) - merged with existing record
 
         Example:
             store.set("users", "Alice", {"name": "Alice", "age": 30})
-            # Key stored as "alice"
+            # Creates: {"name": "Alice", "age": 30}
+
+            store.set("users", "Alice", {"age": 31, "city": "NYC"})
+            # Updates: {"name": "Alice", "age": 31, "city": "NYC"}
         """
-        key = self._normalize_key(key)
         collection_data = self._load_collection(collection)
-        collection_data[key] = data
+
+        # Merge with existing record if it exists
+        if key in collection_data and isinstance(collection_data[key], dict) and isinstance(data, dict):
+            collection_data[key].update(data)
+        else:
+            collection_data[key] = data
+
         self._save_collection(collection, collection_data)
 
     def get(self, collection: str, key: str) -> Optional[Dict[str, Any]]:
@@ -117,16 +115,15 @@ class DictStore:
 
         Args:
             collection: Collection name
-            key: Record key (case-insensitive)
+            key: Record key (case-sensitive)
 
         Returns:
             Record data or None if not found
 
         Example:
-            user = store.get("users", "Alice")  # Finds "alice"
+            user = store.get("users", "Alice")  # Must match exact case
             # Returns: {"name": "Alice", "age": 30}
         """
-        key = self._normalize_key(key)
         collection_data = self._load_collection(collection)
         return collection_data.get(key)
 
@@ -135,15 +132,14 @@ class DictStore:
 
         Args:
             collection: Collection name
-            key: Record key (case-insensitive)
+            key: Record key (case-sensitive)
 
         Returns:
             True if record was deleted, False if it didn't exist
 
         Example:
-            deleted = store.delete("users", "Alice")  # Deletes "alice"
+            deleted = store.delete("users", "Alice")  # Must match exact case
         """
-        key = self._normalize_key(key)
         collection_data = self._load_collection(collection)
 
         if key in collection_data:
@@ -189,16 +185,15 @@ class DictStore:
 
         Args:
             collection: Collection name
-            key: Record key (case-insensitive)
+            key: Record key (case-sensitive)
 
         Returns:
             True if record exists, False otherwise
 
         Example:
-            if store.exists("users", "Alice"):  # Checks "alice"
+            if store.exists("users", "Alice"):  # Must match exact case
                 print("Alice exists!")
         """
-        key = self._normalize_key(key)
         collection_data = self._load_collection(collection)
         return key in collection_data
 

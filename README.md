@@ -13,6 +13,7 @@ Part of the [Box Suite](https://github.com/jmmirabile/confbox) - a modular Pytho
 - **Cross-platform storage** using [ConfBox](https://pypi.org/project/confbox/)
 - **Unix-friendly** - pipe data in and out
 - **Zero configuration** - just install and use
+- **Case-sensitive keys** - follows JSON/YAML specs for data portability
 
 ## Installation
 

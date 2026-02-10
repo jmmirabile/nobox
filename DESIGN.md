@@ -483,6 +483,15 @@ cat f5_vips.txt | awk '{print $1, "dest:"$2, "pool:"$3}' | jb f5 vips import
 - **Decision:** No schema enforcement, flexible key:value storage
 - **Rationale:** Complement to DBBox (schema-based), handles variable fields
 
+### 2026-02-09: Case-Sensitive Keys (JSON/YAML Spec Compliance)
+- **Decision:** Keys are case-sensitive ("User" ≠ "user")
+- **Rationale:**
+  - JSON and YAML specifications define keys as case-sensitive
+  - Ensures data portability when round-tripping through NoBox
+  - Prevents data corruption when importing/exporting to other systems
+  - Example: Original system with {"User": {...}} should not become {"user": {...}}
+- **Impact:** Users must match exact case when accessing records
+
 ### 2026-02-06: key:value CLI Syntax
 - **Decision:** Use `field:value` pairs for setting data
 - **Rationale:** Natural format from awk output, easy to parse, clear syntax

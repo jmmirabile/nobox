@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="nobox",
-    version="0.1.0",
+    version="0.2.0",
     author="Jeff Mirabile",
     author_email="jmmirabile@gmail.com",
     description="JSON and YAML key-value storage utilities with CRUD operations via CLI",
