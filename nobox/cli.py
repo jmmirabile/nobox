@@ -18,6 +18,7 @@ import json
 from typing import Dict, Any, List
 from .store import DictStore
 from .drivers import Driver
+from . import __version__
 
 
 class CLI:
@@ -144,6 +145,14 @@ Storage location (via ConfBox):
             dest="delete_flag",
             action="store_true",
             help="Delete database (with database only) or collection (with database and collection)"
+        )
+
+        # Version flag
+        parser.add_argument(
+            "-v", "--version",
+            action="version",
+            version=f"NoBox {__version__}",
+            help="Show version number and exit"
         )
 
         # Output format options
