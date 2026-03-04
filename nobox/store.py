@@ -278,7 +278,6 @@ class DictStore:
             databases = DictStore.list_databases(JSONDriver())
             # Returns: ["contacts", "inventory", "mydb"]
         """
-        from confbox import get_app_data_dir
 
         # Get base nobox directory via ConfBox
         base_dir = get_app_data_dir(driver.app_name)

@@ -25,7 +25,7 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        "confbox>=0.1.0",
+        "confbox>=0.1.4",
         "PyYAML>=5.1",
     ],
     entry_points={

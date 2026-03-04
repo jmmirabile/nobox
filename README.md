@@ -593,7 +593,7 @@ pytest
 ## Requirements
 
 - Python 3.8+
-- [confbox](https://pypi.org/project/confbox/) >= 0.1.0
+- [confbox](https://pypi.org/project/confbox/)
 - PyYAML (for yamlbox/YAML format)
 
 ## License

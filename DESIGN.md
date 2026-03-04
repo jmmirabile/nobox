@@ -353,7 +353,7 @@ cat f5_vips.txt | awk '{print $1, "dest:"$2, "pool:"$3}' | jb f5 vips import
 ## Dependencies
 
 - **Python 3.8+**
-- **confbox** >= 0.1.0 (for `get_app_data_dir()`)
+- **confbox** (for determining nobox installation directory)
 - **PyYAML** (for yamlbox/YAMLDriver only)
 
 ---
